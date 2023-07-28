@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume</title>
+    <style>
+        body {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <h2>Victor Ivan Cruz G.</h2>
+    <div id="main-container">
+        <canvas id="visualizer"></canvas>
+    </div>
+    <button id="music">Music</button>
+
+    <script>
+        let canvas = document.getElementById('visualizer');
+        let dpr = window.devicePixelRatio;
+        let ctx = canvas.getContext('2d');
+        let rect = canvas.getBoundingClientRect();
+
+
+        let canvasDrawnWidth = window.innerWidth - Math.ceil(rect.x);
+        let canvasDrawnHeight = window.innerHeight - Math.ceil(rect.y) -10;
+        
+        console.log(canvasDrawnHeight);
+        canvas.style.width = `${canvasDrawnWidth}px`;
+        canvas.style.height = `${canvasDrawnHeight}px`;
+        //canvas.style.aspectRatio = `${window.innerWidth} / ${window.innerHeight}`;
+
+        canvas.width = canvasDrawnWidth * dpr;
+        canvas.height = canvasDrawnHeight * dpr;
+        ctx.scale(dpr, dpr);
+
+        let mainElements = [];
+
+        let items = [{  name: 'IPN',
+                        color: 'rgba(163,35,35,0.5)',
+                        relates: [
+                                    'UPIICSA',
+                                    'Java'
+                                ],
+                        imgSrc: 'ipn.png',
+                    },
+                    {name: 'UPIICSA',
+                        color: 'rgba(11,147,58,0.5)',
+                        relates: [],},
+                    {name: 'Java',
+                        color: 'rgba(22,40,242,0.5)',
+                        relates: [],},
+        ];
+
+        generatePoints(30,30);
+        generatePointsFromArray(items, 30);
+        animate();
+
+        function animate(){
+            ctx.clearRect(0,0,canvasDrawnWidth, canvasDrawnHeight);
+            calculateNewPosition();
+            drawCircles();
+            window.requestAnimationFrame(animate);
+        }
+
+        function calculateNewPosition(){
+            let step = 1;
+            let moveLength = 100;
+            mainElements.forEach(circle => {
+
+                if(circle.static == false){
+                    if(circle.currentStep >= circle.maxStep){
+                        circle.destinyAngle = Math.random()*Math.PI*2;
+                        circle.currentStep = 0;
+                        circle.maxStep = (Math.random()*20) + 50;
+                        circle.step = step;
+                    }
+                } else{
+                    //se realiza movimiento con trayectoria de destiny
+                    if(circle.currentStep >= circle.maxStep){
+                        circle.called = false;
+                        circle.static = false;
+                    }
+                }
+
+                //calcula nueva posicion
+
+                let cosAngle = Math.cos(circle.destinyAngle);
+                let sinAngle = Math.sin(circle.destinyAngle);
+
+                
+                if(sinAngle < 0){
+                    
+                    if(cosAngle < 0){
+                        cosAngle = -cosAngle;
+                    }else{
+                        sinAngle = -sinAngle;
+                    }
+                }else{
+                    if(cosAngle <0){
+                        sinAngle = -sinAngle;
+                    }else{
+                        cosAngle = -cosAngle;
+                    }
+                }
+
+                circle.x = circle.x + (sinAngle * circle.step);
+                circle.y = circle.y + (cosAngle * circle.step);
+
+                //detecta colisiones con los bordes
+
+                if(circle.x - circle.radius < 0){
+                    circle.x = circle.radius;
+                    circle.currentStep = circle.maxStep;
+                }
+
+                if(circle.x + circle.radius > canvasDrawnWidth){
+                    circle.x = canvasDrawnWidth - circle.radius;
+                    circle.currentStep = circle.maxStep;
+                }
+
+                if(circle.y - circle.radius < 0){
+                    circle.y = circle.radius;
+                    circle.currentStep = circle.maxStep;
+                }
+
+                if(circle.y + circle.radius > canvasDrawnHeight){
+                    circle.y = canvasDrawnHeight - circle.radius;
+                    circle.currentStep = circle.maxStep;
+                }
+
+                circle.currentStep++;
+                //console.log(circle.destinyAngle);
+            });
+        }
+
+        function drawCircles(){
+            mainElements.forEach(circle =>{
+                ctx.beginPath();
+                ctx.arc(circle.x,circle.y,circle.radius,0,Math.PI*2,false);
+                ctx.fillStyle = circle.color;
+                ctx.fill();
+                ctx.closePath();
+                //ctx.clip();
+                
+                if(circle.imgSrc){
+                    let img = new Image();
+                    img.src = circle.imgSrc;
+                    ctx.beginPath();
+                    ctx.drawImage(img,circle.x - circle.radius,circle.y - circle.radius, circle.radius*2,circle.radius*2);
+                    ctx.closePath();
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(img,circle.x,circle.y, 0, Math.PI*2, false);
+                    ctx.closePath();
+                    ctx.clip();
+                    ctx.restore();
+
+                }
+            })
+        }
+
+        function generatePoints(quantity, maxRadius){
+            if(quantity && quantity > 0){
+                for(let i=0; i< quantity; i++){
+                    let x = (Math.random() * (canvasDrawnWidth - maxRadius)) + maxRadius;
+                    console.log('canvasWidth:' + canvas.width);
+                    let y = (Math.random() * (canvasDrawnHeight - (maxRadius*2))) + maxRadius;
+                    mainElements.push({x:x, y:y, radius:maxRadius, maxStep:0, currentStep:0, destinyAngle: 0, called: false, static: false, destinyCallerX: 0, destinyCallerY: 0, color: 'rgba(111,155,224,0.60)'});
+                }
+                console.log(mainElements);
+            }
+        }
+
+        function generatePointsFromArray(array, maxRadius){
+            if(array && array.length > 0){
+                array.forEach(element =>{
+                    let x = (Math.random() * (canvasDrawnWidth - maxRadius)) + maxRadius;
+                    let y = (Math.random() * (canvasDrawnHeight - (maxRadius*2))) + maxRadius;
+                    
+                    mainElements.push(  {name: element.name,
+                                        x:x, 
+                                        y:y, 
+                                        radius:maxRadius, 
+                                        maxStep:0, 
+                                        currentStep:0, 
+                                        destinyAngle: 0, 
+                                        called: false, 
+                                        static: false, 
+                                        destinyCallerX: 0, 
+                                        destinyCallerY: 0,
+                                        color: element.color,
+                                        relates: element.relates,
+                                        imgSrc: element.imgSrc,
+                                    });
+
+                });
+            }
+        }
+
+        canvas.addEventListener('click', (event)=>{
+            let pointerX = Math.ceil(event.pageX - rect.x);
+            let pointerY = Math.ceil(event.pageY - rect.y);
+            let selectedCircle = getCircle(pointerX, pointerY);
+            if(selectedCircle){
+                //alert('hay un circulo aqui');
+                activateAllCircles();
+                selectedCircle.static = true;
+                callRelates(selectedCircle);
+            }else{
+                alert('busca un circulo');
+            }
+            //alert(pointerX + ',' + pointerY);
+        });
+
+        function callRelates(circleSelected){
+            if(circleSelected.relates && circleSelected.relates.length > 0){
+                circleSelected.relates.forEach(relateName =>{
+                    let relate = findRelate(relateName);
+                    if(relate){
+                        relate.called = true;
+                        relate.static = true;
+                        relate.currentStep = 0;
+                        getRelateTrack(circleSelected,relate,30);
+                    }
+                })
+            }
+        }
+
+        function findRelate(name){
+            let relate = null;
+            mainElements.forEach(circle =>{
+                if(circle.name == name){
+                    relate = circle;
+                    return;
+                }
+            });
+            return relate;
+        }
+
+        function getRelateTrack(circle, relate, step){
+            let deltaX = relate.x - circle.x;
+            let deltaY = relate.y - circle.y;
+            let theta = 0;
+            let distance = 0;
+
+            //calculamos la distancia
+            let a = Math.abs(deltaX);
+            let b = Math.abs(deltaY);
+            distance = Math.sqrt(Math.pow(a,2) + Math.pow(b,2));
+
+            //calculamos el angulo con respecto a caller
+            theta = Math.asin(a/distance);
+
+            //se trata de una pendientes distinta a 0 y distinta a indefinicion
+            if(deltaX != 0 && deltaY != 0){
+                let m = deltaY / deltaX;
+                //evaluamos el tipo de pendiente (pendientes de 0 estan discriminadas)
+                if(m > 0){
+                    //pendiente ascendente
+                    if(deltaX > 0){
+                        theta = Math.PI - theta;
+                    }else{
+                        theta =  (2*Math.PI) - theta;
+                    }
+                }else{
+                    //pendiente descendiente
+                    if(deltaX > 0){
+                        theta = Math.PI + theta;
+                    }else{
+                        theta = theta;
+                    }
+                }
+            }else{
+                //pendientes de 0 o indefinidas
+                if(deltaX == 0){
+                    //recta vertical
+                    if(deltaY > 0){
+                        theta = Math.PI * 1.5;
+                    }else{
+                        theta = Math.PI * 0.5;
+                    }
+                } else{
+                    //recta horizontal
+                    if(deltaX > 0){
+                        theta = Math.PI;
+                    }else{
+                        theta = 0;
+                    }
+                }
+            }
+
+            //calculamos el valor de maxStep
+            relate.maxStep = (distance/2)/step;
+            relate.step =step;
+
+            relate.destinyAngle = theta;
+            relate.destinyCallerX = circle.x;
+            relate.destinyCallerY = circle.y;
+        }
+
+        function getCircle(x,y){
+            let selectedCircle = null;
+            let flag = true;
+            for(let i = 0; i < mainElements.length && flag == true; i++){
+                if(mainElements[i].x + mainElements[i].radius > x && mainElements[i].x - mainElements[i].radius < x
+                    && mainElements[i].y + mainElements[i].radius > y && mainElements[i].y - mainElements[i].radius < y){
+                        flag = false;
+                        selectedCircle = mainElements[i];
+                    }
+            }
+            return selectedCircle;
+        }
+
+        function activateAllCircles(){
+            mainElements.forEach(circle=>{
+                circle.static = false;
+            });
+        }
+
+        btnMusic = document.getElementById('music');
+        let musicPlaying = false;
+        btnMusic.addEventListener('click', (event)=>{
+            if(!musicPlaying){
+                let mainTrack = new Audio('mainTrack.mp3');
+                mainTrack.addEventListener('canplay', (event) => {
+                        mainTrack.volume = .4;
+                        mainTrack.loop = true;
+                        mainTrack.play();
+                });
+                musicPlaying = true;
+            }
+        });
+
+
+    </script>
+</body>
+</html>
